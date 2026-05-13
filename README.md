@@ -40,7 +40,6 @@ bob-workshop/
 - 建立自訂 Slash Command
 - 撰寫專案 Rules 確保程式碼品質
 - 建立 AGENTS.md 指導 AI 助手
-- 建立 SKILL.md 記錄技術知識
 - 實作金融系統的安全最佳實踐
 
 ### 快速開始
