@@ -10,7 +10,8 @@
     "topics/station-system/src/main/resources",
     "topics/transaction-monitor/src/main/resources"
   ],
-  "java.project.outputPath": "target/classes"
+  "java.project.outputPath": "target/classes",
+  "java.compile.nullAnalysis.mode": "automatic"
 }
 
 // Made with Bob
