@@ -552,7 +552,7 @@
     <div class="talking-point">
       <div class="tp-header">
         <span class="tp-icon">💬</span>
-        <span class="tp-label">談話要點 · #4</span>
+        <span class="tp-label">談話要點</span>
       </div>
       <ul class="tp-list">
         <li>我們正在建構一個模擬信用卡支付應用程式 — 後端、前端，全部在一個提示中完成。</li>
@@ -561,13 +561,13 @@
       </ul>
     </div>
 
-    <div class="stage-note">
+    <!--<div class="stage-note">
       <div class="note-header">
         <span class="note-icon">📝</span>
         <span class="note-label">簡報者備註 · #6</span>
       </div>
       在此迭代中，我們要求使用 Java 11，因此如果想展示 Java 現代化用例，可以新增一個階段。否則您可以要求使用較新版本，如 Java 17+。
-    </div>
+    </div>-->
 
     <div class="section-label">提示</div>
 
@@ -654,7 +654,7 @@ payment-app/
     <div class="talking-point">
       <div class="tp-header">
         <span class="tp-icon">💬</span>
-        <span class="tp-label">談話要點 · #5</span>
+        <span class="tp-label">談話要點</span>
       </div>
       當 Bob 產生時 — 觀察它首先產生詳細的待辦清單，在撰寫任何一行程式碼之前分解整個建構計劃。根據您的<strong>允許動作</strong>設定，Bob 可能會暫停並在執行某些步驟之前徵求您的批准 — 例如建立檔案或執行命令。這讓您完全控制 Bob 做什麼以及何時做。<br><br>當它完成建構應用程式時，Bob 將產生一個 <code>README.md</code>，詳細說明所有已實作的內容。它還會提供清晰的交接訊息，讓您確切知道接下來該做什麼。<br><br>請注意，Bob 不僅建構了應用程式 — 它還在 <code>k8s/deployment.yaml</code> 中產生了 <strong>Dockerfile</strong> 和 <strong>OpenShift 部署清單</strong>。一個提示，您就擁有了在生產環境中容器化和部署應用程式所需的一切。
 
@@ -669,7 +669,7 @@ payment-app/
       <div class="output-item"><span class="output-icon">→</span>README.md — 如何建構和執行</div>
     </div>
 
-    <div class="stage-note">
+    <!--<div class="stage-note">
       <div class="note-header">
         <span class="note-icon">📝</span>
         <span class="note-label">簡報者備註 · #7</span>
@@ -680,12 +680,12 @@ payment-app/
 • <strong>CVV：</strong>任何 3 位數字，例如 <code>123</code><br>
 • <strong>金額：</strong>任何值，例如 <code>99.99</code><br><br>
 點擊 <strong>Authorize</strong> 並觀察交易出現在歷史儀表板中。預期結果是以下之一：<strong>Authorized</strong>（黃色）、<strong>Captured</strong>（綠色）、<strong>Declined</strong>（紅色）或 <strong>Refunded</strong>（灰色）— 約有 10% 的機會被拒絕以模擬真實世界的行為。<br><br>這確認了 UI 正在與後端通訊 — Bob 不僅產生了程式碼，它產生了一個<em>可運作的</em>應用程式。
-    </div>
+    </div>-->
 
     <div class="stage-tip">
       <div class="tip-header">
         <span class="tip-icon">💡</span>
-        <span class="tip-label">提示 · #36</span>
+        <span class="tip-label">提示</span>
       </div>
       如果您在啟動應用程式時遇到任何問題，只需要求 Bob 進行故障排除。在終端機中選擇錯誤訊息，右鍵點擊 → <strong>IBM Bob → Add terminal content to context</strong> 或 <strong>Fix this command</strong> — Bob 將立即診斷並修復問題。這本身就是一個很好的現場示範時刻。
     </div>
