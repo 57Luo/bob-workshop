@@ -57,7 +57,7 @@ function cacheElements() {
  */
 function showLoading(show = true) {
     if (elements.loadingIndicator) {
-        elements.loadingIndicator.style.display = show ? 'flex' : 'none';
+        elements.loadingIndicator.classList.toggle('hidden', !show);
     }
 }
 
@@ -67,9 +67,9 @@ function showLoading(show = true) {
 function showError(message) {
     if (elements.errorAlert && elements.errorMessage) {
         elements.errorMessage.textContent = message;
-        elements.errorAlert.style.display = 'block';
+        elements.errorAlert.classList.remove('hidden');
         
-        // 3 秒後自動關閉
+        // 5 秒後自動關閉
         setTimeout(() => {
             hideError();
         }, 5000);
@@ -87,7 +87,7 @@ function showError(message) {
  */
 function hideError() {
     if (elements.errorAlert) {
-        elements.errorAlert.style.display = 'none';
+        elements.errorAlert.classList.add('hidden');
     }
 }
 
@@ -208,46 +208,62 @@ function displayQuestion(question) {
     
     // 更新題目文字
     elements.questionText.textContent = question.question;
-    elements.questionText.removeAttribute('role'); // 移除 alert role
+    elements.questionText.removeAttribute('role');
+    
+    // 保留 legend，清空其他內容
+    const legend = elements.optionsSection.querySelector('legend');
+    elements.optionsSection.innerHTML = '';
+    if (legend) {
+        elements.optionsSection.appendChild(legend);
+    }
     
     // 生成選項
-    elements.optionsSection.innerHTML = '';
-    
     question.options.forEach((option, index) => {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'option';
-        button.setAttribute('role', 'radio');
-        button.setAttribute('aria-checked', 'false');
-        button.setAttribute('tabindex', '0');
-        button.setAttribute('aria-label', `選項 ${String.fromCharCode(65 + index)}: ${option}`);
+        const label = document.createElement('label');
+        label.className = 'option';
+        label.setAttribute('tabindex', '0');
         
-        const label = document.createElement('span');
-        label.className = 'option-label';
-        label.textContent = String.fromCharCode(65 + index);
-        label.setAttribute('aria-hidden', 'true');
+        const radio = document.createElement('input');
+        radio.type = 'radio';
+        radio.name = 'quiz-option';
+        radio.value = index;
+        radio.id = `option-${index}`;
+        radio.setAttribute('aria-label', `選項 ${String.fromCharCode(65 + index)}: ${option}`);
+        
+        const labelSpan = document.createElement('span');
+        labelSpan.className = 'option-label';
+        labelSpan.textContent = String.fromCharCode(65 + index);
+        labelSpan.setAttribute('aria-hidden', 'true');
         
         const text = document.createElement('span');
         text.className = 'option-text';
         text.textContent = option;
         
-        button.appendChild(label);
-        button.appendChild(text);
+        label.appendChild(radio);
+        label.appendChild(labelSpan);
+        label.appendChild(text);
         
-        // 使用事件委派
-        button.addEventListener('click', () => checkAnswer(index));
-        button.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
+        // 事件處理
+        label.addEventListener('click', () => {
+            if (!radio.disabled) {
+                radio.checked = true;
                 checkAnswer(index);
             }
         });
         
-        elements.optionsSection.appendChild(button);
+        label.addEventListener('keydown', (e) => {
+            if ((e.key === 'Enter' || e.key === ' ') && !radio.disabled) {
+                e.preventDefault();
+                radio.checked = true;
+                checkAnswer(index);
+            }
+        });
+        
+        elements.optionsSection.appendChild(label);
     });
     
     // 隱藏解釋區
-    elements.explanationSection.style.display = 'none';
+    elements.explanationSection.classList.add('hidden');
     elements.explanationSection.setAttribute('aria-hidden', 'true');
 }
 
@@ -258,22 +274,32 @@ function checkAnswer(selectedIndex) {
     if (!currentQuestion) return;
     
     const options = elements.optionsSection.querySelectorAll('.option');
+    const radios = elements.optionsSection.querySelectorAll('input[type="radio"]');
     const correctIndex = currentQuestion.correct;
+    
+    // 驗證索引
+    if (correctIndex < 0 || correctIndex >= options.length) {
+        console.error('Invalid correct index:', correctIndex);
+        return;
+    }
     
     // 禁用所有選項
     options.forEach((option, index) => {
         option.classList.add('disabled');
-        option.disabled = true;
-        option.setAttribute('aria-disabled', 'true');
-        
-        // 更新 aria-checked
-        if (index === correctIndex) {
-            option.setAttribute('aria-checked', 'true');
+        const radio = radios[index];
+        if (radio) {
+            radio.disabled = true;
+            radio.setAttribute('aria-disabled', 'true');
+            if (index === correctIndex) {
+                radio.checked = true;
+            }
         }
     });
     
     // 標記正確答案
-    options[correctIndex].classList.add('correct');
+    if (options[correctIndex]) {
+        options[correctIndex].classList.add('correct');
+    }
     
     // 檢查是否答對
     const isCorrect = selectedIndex === correctIndex;
@@ -282,7 +308,9 @@ function checkAnswer(selectedIndex) {
         stats.correct++;
         stats.total++;
     } else {
-        options[selectedIndex].classList.add('wrong');
+        if (options[selectedIndex]) {
+            options[selectedIndex].classList.add('wrong');
+        }
         stats.wrong++;
         stats.total++;
     }
@@ -309,7 +337,7 @@ function showExplanation(explanation, isCorrect) {
         <div>${explanation}</div>
     `;
     
-    elements.explanationSection.style.display = 'block';
+    elements.explanationSection.classList.remove('hidden');
     elements.explanationSection.removeAttribute('aria-hidden');
     
     // 將焦點移至解釋區以便螢幕閱讀器朗讀
@@ -337,12 +365,17 @@ function updateStats() {
 function updateStatValue(element, value) {
     if (!element) return;
     
-    element.classList.add('updating');
-    element.textContent = value;
-    
-    setTimeout(() => {
-        element.classList.remove('updating');
-    }, 200);
+    // 安全地更新元素
+    try {
+        element.classList.add('updating');
+        element.textContent = value;
+        
+        setTimeout(() => {
+            element.classList.remove('updating');
+        }, 200);
+    } catch (error) {
+        console.warn('Error updating stat value:', error);
+    }
 }
 
 /**
@@ -392,9 +425,10 @@ function handleKeyboard(e) {
     // 數字鍵 1-4 選擇選項
     if (e.key >= '1' && e.key <= '4') {
         const index = parseInt(e.key) - 1;
-        const options = elements.optionsSection.querySelectorAll('.option');
-        if (options[index] && !options[index].disabled) {
+        const radios = elements.optionsSection.querySelectorAll('input[type="radio"]');
+        if (radios[index] && !radios[index].disabled) {
             e.preventDefault();
+            radios[index].checked = true;
             checkAnswer(index);
         }
     }
