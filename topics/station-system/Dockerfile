@@ -9,6 +9,10 @@ COPY mvnw .
 COPY .mvn .mvn
 COPY pom.xml .
 
+# 修正 mvnw 執行權限並轉換 line ending (解決 Windows 相容性問題)
+RUN chmod +x mvnw && \
+    dos2unix mvnw 2>/dev/null || sed -i 's/\r$//' mvnw
+
 # 下載依賴 (利用 Docker 快取層)
 RUN ./mvnw dependency:go-offline -B
 
