@@ -4,10 +4,12 @@ spring:
   
   # H2 資料庫設定
   datasource:
-    url: jdbc:h2:mem:metro
+    url: jdbc:h2:mem:metro;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
     driver-class-name: org.h2.Driver
     username: sa
-    password: 
+    password:
+    hikari:
+      connection-init-sql: SET NAMES utf8mb4
   
   # H2 Console 設定
   h2:
@@ -32,10 +34,16 @@ spring:
   sql:
     init:
       mode: always
+      encoding: UTF-8
 
 # Server 設定
 server:
   port: 8080
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
   error:
     include-message: always
     include-binding-errors: always

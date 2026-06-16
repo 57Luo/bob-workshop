@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>捷運乘客回饋系統 - Bob AI 輔助開發</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* ========================================
+           CSS CUSTOM PROPERTIES (Blue Professional Theme)
+           ======================================== */
+        :root {
+            /* Colors */
+            --bg: #fdfae7;
+            --primary: #1e2bfa;
+            --text: #111111;
+            --text-muted: #6b6b6b;
+            --text-light: #9a9a9a;
+            --accent-light: rgba(30, 43, 250, 0.08);
+            --accent-medium: rgba(30, 43, 250, 0.15);
+            --border: rgba(30, 43, 250, 0.2);
+            --card-bg: rgba(30, 43, 250, 0.04);
+            --positive: #059669;
+            --negative: #dc2626;
+            --stage-bg: #1a1a1a;
+            
+            /* Typography */
+            --font-display: 'Space Grotesk', sans-serif;
+            --font-body: 'Inter', sans-serif;
+            
+            /* Animation */
+            --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+            --duration-normal: 0.6s;
+        }
+
+        /* ========================================
+           BASE STYLES
+           ======================================== */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+            background: var(--stage-bg);
+        }
+        
+        .deck-viewport {
+            position: fixed;
+            inset: 0;
+            overflow: hidden;
+            background: var(--stage-bg);
+        }
+        
+        .deck-stage {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 1920px;
+            height: 1080px;
+            overflow: hidden;
+            transform-origin: 0 0;
+            background: var(--bg);
+        }
+        
+        .slide {
+            position: absolute;
+            inset: 0;
+            width: 1920px;
+            height: 1080px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 80px;
+            visibility: hidden;
+            opacity: 0;
+            pointer-events: none;
+            background: var(--bg);
+        }
+        
+        .slide.active, .slide.visible {
+            visibility: visible;
+            opacity: 1;
+            pointer-events: auto;
+            z-index: 1;
+        }
+
+        /* ========================================
+           TYPOGRAPHY
+           ======================================== */
+        h1 {
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 96px;
+            line-height: 1.1;
+            letter-spacing: -0.02em;
+            color: var(--text);
+            margin-bottom: 32px;
+        }
+        
+        h2 {
+            font-family: var(--font-display);
+            font-weight: 600;
+            font-size: 64px;
+            line-height: 1.1;
+            letter-spacing: -0.02em;
+            color: var(--text);
+            margin-bottom: 48px;
+        }
+        
+        h3 {
+            font-family: var(--font-display);
+            font-weight: 600;
+            font-size: 42px;
+            line-height: 1.2;
+            letter-spacing: -0.01em;
+            color: var(--text);
+            margin-bottom: 24px;
+        }
+        
+        .eyebrow {
+            font-family: var(--font-display);
+            font-weight: 600;
+            font-size: 20px;
+            line-height: 1.1;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--primary);
+            margin-bottom: 16px;
+        }
+        
+        p, li {
+            font-family: var(--font-body);
+            font-weight: 400;
+            font-size: 28px;
+            line-height: 1.6;
+            color: var(--text-muted);
+        }
+        
+        .subtitle {
+            font-family: var(--font-body);
+            font-weight: 500;
+            font-size: 36px;
+            line-height: 1.4;
+            color: var(--text-muted);
+        }
+        
+        .metric-value {
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 72px;
+            line-height: 1;
+            color: var(--primary);
+        }
+        
+        .metric-label {
+            font-family: var(--font-body);
+            font-weight: 600;
+            font-size: 24px;
+            line-height: 1.3;
+            color: var(--text);
+            margin-top: 12px;
+        }
+
+        /* ========================================
+           LAYOUT COMPONENTS
+           ======================================== */
+        .slide-content {
+            width: 100%;
+            max-width: 1600px;
+        }
+        
+        .card {
+            background: var(--card-bg);
+            border: 1.5px solid var(--border);
+            border-radius: 14px;
+            padding: 48px;
+            margin-bottom: 32px;
+        }
+        
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 48px;
+            width: 100%;
+        }
+        
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 40px;
+            width: 100%;
+        }
+        
+        .grid-4 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 32px;
+            width: 100%;
+        }
+        
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        li {
+            padding-left: 40px;
+            position: relative;
+            margin-bottom: 20px;
+        }
+        
+        li::before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: var(--primary);
+            font-weight: 700;
+        }
+        
+        .stat-box {
+            background: var(--card-bg);
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            padding: 32px;
+            text-align: center;
+        }
+        
+        .code-block {
+            background: rgba(0, 0, 0, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 24px 32px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 20px;
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        /* ========================================
+           ANIMATIONS
+           ======================================== */
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity var(--duration-normal) var(--ease-out-expo),
+                        transform var(--duration-normal) var(--ease-out-expo);
+        }
+        
+        .slide.visible .reveal {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .reveal:nth-child(1) { transition-delay: 0.1s; }
+        .reveal:nth-child(2) { transition-delay: 0.2s; }
+        .reveal:nth-child(3) { transition-delay: 0.3s; }
+        .reveal:nth-child(4) { transition-delay: 0.4s; }
+        .reveal:nth-child(5) { transition-delay: 0.5s; }
+        .reveal:nth-child(6) { transition-delay: 0.6s; }
+
+        /* ========================================
+           SLIDE-SPECIFIC STYLES
+           ======================================== */
+        .title-slide {
+            text-align: center;
+        }
+        
+        .title-slide h1 {
+            font-size: 112px;
+            margin-bottom: 24px;
+        }
+        
+        .title-slide .subtitle {
+            font-size: 42px;
+            margin-bottom: 80px;
+        }
+        
+        .title-slide .meta {
+            font-size: 24px;
+            color: var(--text-light);
+        }
+        
+        .page-number {
+            position: absolute;
+            bottom: 40px;
+            right: 60px;
+            font-family: var(--font-body);
+            font-size: 20px;
+            color: var(--text-light);
+        }
+        
+        .emoji {
+            font-size: 1.2em;
+            margin-right: 8px;
+        }
+        
+        .highlight {
+            color: var(--primary);
+            font-weight: 600;
+        }
+        
+        .success {
+            color: var(--positive);
+        }
+        
+        .tag {
+            display: inline-block;
+            background: var(--accent-light);
+            color: var(--primary);
+            padding: 8px 20px;
+            border-radius: 100px;
+            font-size: 18px;
+            font-weight: 600;
+            margin: 4px;
+        }
+
+        /* ========================================
+           NAVIGATION CONTROLS
+           ======================================== */
+        .deck-controls {
+            position: fixed;
+            left: 50%;
+            bottom: 40px;
+            transform: translateX(-50%);
+            z-index: 1000;
+            display: flex;
+            gap: 16px;
+        }
+        
+        .deck-controls button {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 24px;
+            font-family: var(--font-body);
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .deck-controls button:hover {
+            background: white;
+            transform: translateY(-2px);
+        }
+        
+        .slide-indicator {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 24px;
+            font-family: var(--font-body);
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text);
+        }
+    </style>
+</head>
+<body>
+    <div class="deck-viewport">
+        <main class="deck-stage" id="deckStage">
+            
+            <!-- Slide 1: 封面 -->
+            <section class="slide title-slide active">
+                <div class="eyebrow reveal">IBM BOB WORKSHOP</div>
+                <h1 class="reveal">捷運乘客回饋系統</h1>
+                <p class="subtitle reveal">使用 Bob AI 輔助開發完整功能</p>
+                <div class="meta reveal">
+                    <p>作者: Huhujaja</p>
+                    <p>日期: 2026-06-16</p>
+                    <p style="margin-top: 40px; font-size: 28px;">Made with ❤️ by Bob AI Assistant</p>
+                </div>
+            </section>
+
+            <!-- Slide 2: 專案背景 -->
+            <section class="slide">
+                <div class="slide-content">
+                    <div class="eyebrow reveal">PROJECT BACKGROUND</div>
+                    <h2 class="reveal">專案背景</h2>
+                    <div class="grid-2">
+                        <div class="card reveal">
+                            <h3><span class="emoji">😫</span>痛點</h3>
+                            <ul>
+                                <li>捷運站務需要收集乘客意見</li>
+                                <li>缺乏系統化的回饋管理</li>
+                                <li>無法即時統計分析</li>
+                            </ul>
+                        </div>
+                        <div class="card reveal">
+                            <h3><span class="emoji">🎯</span>目標</h3>
+                            <ul>
+                                <li>建立完整回饋管理系統</li>
+                                <li>提供統計分析功能</li>
+                                <li>快速開發 (1.5 小時)</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="card reveal">
+                        <h3><span class="emoji">💡</span>解決方案</h3>
+                        <p style="font-size: 32px; color: var(--primary); font-weight: 600;">使用 Bob AI 輔助開發，從零到完成僅需 1.5 小時！</p>
+                    </div>
+                </div>
+                <div class="page-number">2</div>
+            </section>
+
+            <!-- Slide 3: 系統架構 -->
+            <section class="slide">
+                <div class="slide-content">
+                    <div class="eyebrow reveal">SYSTEM ARCHITECTURE</div>
+                    <h2 class="reveal">系統架構</h2>
+                    <div class="card reveal">
+                        <h3>技術棧</h3>
+                        <div class="grid-4" style="margin-top: 32px;">
+                            <div class="stat-box">
+                                <div class="metric-value">Spring Boot</div>
+                                <div class="metric-label">後端框架</div>
+                                <p style="font-size: 20px; margin-top: 12px;">3.2.0 + Java 17</p>
+                            </div>
+                            <div class="stat-box">
+                                <div class="metric-value">H2</div>
+                                <div class="metric-label">資料庫</div>
+                                <p style="font-size: 20px; margin-top: 12px;">In-Memory</p>
+                            </div>
+                            <div class="stat-box">
+                                <div class="metric-value">Bootstrap</div>
+                                <div class="metric-label">前端框架</div>
+                                <p style="font-size: 20px; margin-top: 12px;">5.3 + Vanilla JS</p>
+                            </div>
+                            <div class="stat-box">
+                                <div class="metric-value">Maven</div>
+                                <div class="metric-label">建置工具</div>
+                                <p style="font-size: 20px; margin-top: 12px;">3.9.6</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card reveal" style="text-align: center; padding: 40px;">
+                        <p style="font-size: 36px; font-weight: 600; color: var(--text);">
+                            前端 UI → REST API → Service 層 → Repository → H2 資料庫
+                        </p>
+                    </div>
+                </div>
+                <div class="page-number">3</div>
+            </section>
+
+            <!-- Slide 4: 核心功能 - 後端 API -->
+            <section class="slide">
+                <div class="slide-content">
+                    <div class="eyebrow reveal">CORE FEATURES</div>
+                    <h2 class="reveal">核心功能 - 後端 API</h2>
+                    <div class="card reveal">
+                        <h3><span class="emoji">🔌</span>8 個 REST API 端點</h3>
+                        <div class="grid-2" style="margin-top: 32px;">
+                            <div>
+                                <ul>
+                                    <li><span class="highlight">GET</span> /api/feedbacks - 取得所有回饋</li>
+                                    <li><span class="highlight">GET</span> /api/feedbacks/{id} - 取得單一回饋</li>
+                                    <li><span class="highlight">GET</span> /api/feedbacks/station/{id} - 依車站查詢</li>
+                                    <li><span class="highlight">POST</span> /api/feedbacks - 新增回饋</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <ul>
+                                    <li><span class="highlight">DELETE</span> /api/feedbacks/{id} - 刪除回饋</li>
+                                    <li><span class="highlight">GET</span> /api/feedbacks/statistics - 所有統計</li>
+                                    <li><span class="highlight">GET</span> /api/feedbacks/statistics/{id} - 車站統計</li>
+                                    <li><span class="highlight">GET</span> /api/feedbacks/average-rating/{id} - 平均評分</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="page-number">4</div>
+            </section>
+
+            <!-- Slide 5: 資料模型設計 -->
+            <section class="slide">
+                <div class="slide-content">
+                    <div class="eyebrow reveal">DATA MODEL</div>
+                    <h2 class="reveal">資料模型設計</h2>
+                    <div class="grid-2">
+                        <div class="card reveal">
+                            <h3><span class="emoji">📊</span>Feedback 實體</h3>
+                            <ul style="margin-top: 24px;">
+                                <li><span class="highlight">id</span> (Long) - 主鍵</li>
+                                <li><span class="highlight">rating</span> (Integer) - 評分 1-5 星</li>
+                                <li><span class="highlight">comment</span> (String) - 評論內容</li>
+                                <li><span class="highlight">passengerName</span> (String) - 乘客姓名</li>
+                                <li><span class="highlight">station</span> (Station) - 關聯車站</li>
+                                <li><span class="highlight">createdAt</span> (LocalDateTime) - 建立時間</li>
+                            </ul>
+                        </div>
+                        <div class="card reveal">
+                            <h3><span class="emoji">🔗</span>關聯設計</h3>
+                            <div style="margin-top: 40px; text-align: center;">
+                                <div class="stat-box" style="margin-bottom: 32px;">
+                                    <div class="metric-value">Many-to-One</div>
+                                    <div class="metric-label">關聯類型</div>
+                                </div>
+                                <p style="font-size: 32px; font-weight: 600; color: var(--text);">
+                                    多個回饋 → 一個車站
+                                </p>
+                                <p style="margin-top: 24px; font-size: 24px;">
+                                    使用 <span class="highlight">@ManyToOne</span> 註解<br/>
+                                    外鍵: <span class="highlight">station_id</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="page-number">5</div>
+            </section>
+
+            <!-- Slide 6: 前端介面展示 -->
+            <section class="slide">
+                <div class="slide-content">
+                    <div class="eyebrow reveal">USER INTERFACE</div>
+                    <h2 class="reveal">前端介面展示</h2>
+                    <div class="reveal">
+                        <h3><span class="emoji">🎨</span>三大功能區塊</h3>
+                    </div>
+                    <div class="grid-3">
+                        <div class="card reveal">
+                            <h3 style="font-size: 32px; margin-bottom: 20px;">1️⃣ 回饋提交表單</h3>
+                            <ul>
+                                <li>車站選擇下拉選單</li>
+                                <li>1-5 星評分選擇</li>
+                                <li>評論文字輸入</li>
+                                <li>乘客姓名輸入</li>
+                            </ul>
+                        </div>
+                        <div class="card reveal">
+                            <h3 style="font-size: 32px; margin-bottom: 20px;">2️⃣ 車站統計卡片</h3>
+                            <ul>
+                                <li>各車站平均評分</li>
+                                <li>回饋數量統計</li>
+                                <li>星星視覺化呈現</li>
+                                <li>即時更新顯示</li>
+                            </ul>
+                        </div>
+                        <div class="card reveal">
+                            <h3 style="font-size: 32px; margin-bottom: 20px;">3️⃣ 回饋列表</h3>
+                            <ul>
+                                <li>即時顯示所有回饋</li>
+                                <li>星星評分顯示</li>
+                                <li>時間戳記</li>
+                                <li>車站資訊</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="page-number">6</div>
+            </section>
+
+            <!-- Slide 7: 開發成果統計 -->
+            <section class="slide">
+                <div class="slide-content">
+                    <div class="eyebrow reveal">DEVELOPMENT RESULTS</div>
+                    <h2 class="reveal">開發成果統計</h2>
+                    <div class="grid-2">
+                        <div class="card reveal">
+                            <h3><span class="emoji">📈</span>程式碼統計</h3>
+                            <div class="grid-2" style="margin-top: 32px;">
+                                <div class="stat-box">
+                                    <div class="metric-value">5</div>
+                                    <div class="metric-label">Java 類別</div>
+                                </div>
+                                <div class="stat-box">
+                                    <div class="metric-value">3</div>
+                                    <div class="metric-label">前端檔案</div>
+                                </div>
+                                <div class="stat-box">
+                                    <div class="metric-value">16</div>
+                                    <div class="metric-label">測試資料</div>
+                                </div>
+                                <div class="stat-box">
+                                    <div class="metric-value">8</div>
+                                    <div class="metric-label">API 端點</div>
+                                </div>
+                            </div>
+                            <div class="stat-box" style="margin-top: 24px;">
+                                <div class="metric-value">~1,500</div>
+                                <div class="metric-label">總程式碼行數</div>
+                            </div>
+                        </div>
+                        <div class="card reveal">
+                            <h3><span class="emoji">⏱️</span>開發時間</h3>
+                            <ul style="margin-top: 32px;">
+                                <li>後端開發: <span class="highlight">30 分鐘</span></li>
+                                <li>前端整合: <span class="highlight">30 分鐘</span></li>
+                                <li>測試除錯: <span class="highlight">20 分鐘</span></li>
+                                <li>文件撰寫: <span class="highlight">10 分鐘</span></li>
+                            </ul>
+                            <div class="stat-box" style="margin-top: 40px; background: var(--accent-medium);">
+                                <div class="metric-value" style="font-size: 96px;">1.5</div>
+                                <div class="metric-label" style="font-size: 32px;">小時完成</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="page-number">7</div>
+            </section>
+
+            <!-- Slide 8: Bob AI 輔助亮點 -->
+            <section class="slide">
+                <div class="slide-content">
+                    <div class="eyebrow reveal">BOB AI HIGHLIGHTS</div>
+                    <h2 class="reveal">Bob AI 輔助亮點</h2>
+                    <div class="card reveal">
+                        <h3><span class="emoji">🤖</span>使用的 Bob 功能</h3>
+                        <div style="margin-top: 32px;">
+                            <span class="tag">Code Mode - 程式碼生成</span>
+                            <span class="tag">多檔案同時讀取分析</span>
+                            <span class="tag">精準的 diff 修改</span>
+                            <span class="tag">Git 整合與衝突解決</span>
+                            <span class="tag">完整文件自動生成</span>
+                        </div>
+                    </div>
+                    <div class="grid-2">
+                        <div class="card reveal">
+                            <h3><span class="emoji">📊</span>效率提升</h3>
+                            <div class="stat-box" style="margin-top: 24px;">
+                                <div class="metric-value">4-6</div>
+                                <div class="metric-label">傳統開發 (小時)</div>
+                            </div>
+                            <div style="text-align: center; margin: 24px 0; font-size: 48px; color: var(--primary);">↓</div>
+                            <div class="stat-box">
+                                <div class="metric-value success">1.5</div>
+                                <div class="metric-label">使用 Bob (小時)</div>
+                            </div>
+                        </div>
+                        <div class="card reveal">
+                            <h3><span class="emoji">🚀</span>效率倍增</h3>
+                            <div class="stat-box" style="margin-top: 24px; background: var(--accent-medium);">
+                                <div class="metric-value" style="font-size: 120px;">3-4x</div>
+                                <div class="metric-label" style="font-size: 36px;">效率提升</div>
+                            </div>
+                            <p style="text-align: center; margin-top: 32px; font-size: 28px; font-weight: 600; color: var(--primary);">
+                                開發速度提升 3-4 倍！
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="page-number">8</div>
+            </section>
+
+            <!-- Slide 9: 技術亮點 -->
+            <section class="slide">
+                <div class="slide-content">
+                    <div class="eyebrow reveal">TECHNICAL HIGHLIGHTS</div>
+                    <h2 class="reveal">技術亮點</h2>
+                    <div class="grid-3">
+                        <div class="card reveal">
+                            <h3><span class="emoji">🏗️</span>後端設計模式</h3>
+                            <ul style="margin-top: 24px;">
+                                <li>Repository Pattern</li>
+                                <li>Service Layer Pattern</li>
+                                <li>DTO Pattern</li>
+                                <li>RESTful API Design</li>
+                            </ul>
+                        </div>
+                        <div class="card reveal">
+                            <h3><span class="emoji">🎨</span>前端最佳實踐</h3>
+                            <ul style="margin-top: 24px;">
+                                <li>響應式設計</li>
+                                <li>即時更新</li>
+                                <li>使用者體驗優化</li>
+                                <li>錯誤處理機制</li>
+                            </ul>
+                        </div>
+                        <div class="card reveal">
+                            <h3><span class="emoji">💾</span>資料庫特色</h3>
+                            <ul style="margin-top: 24px;">
+                                <li>H2 記憶體資料庫</li>
+                                <li>JPA/Hibernate ORM</li>
+                                <li>自動 Schema 生成</li>
+                                <li>SQL 初始化腳本</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="page-number">9</div>
+            </section>
+
+            <!-- Slide 10: 總結與展望 -->
+            <section class="slide">
+                <div class="slide-content">
+                    <div class="eyebrow reveal">CONCLUSION</div>
+                    <h2 class="reveal">總結與展望</h2>
+                    <div class="grid-2">
+                        <div class="card reveal">
+                            <h3><span class="emoji">✅</span>已完成</h3>
+                            <ul style="margin-top: 24px;">
+                                <li>完整的回饋 CRUD 功能</li>
+                                <li>統計分析功能</li>
+                                <li>前後端整合</li>
+                                <li>GitHub 版本控制</li>
+                                <li>完整技術文件</li>
+                            </ul>
+                        </div>
+                        <div class="card reveal">
+                            <h3><span class="emoji">🔮</span>未來展望</h3>
+                            <ul style="margin-top: 24px;">
+                                <li>新增回饋分類功能</li>
+                                <li>實作情緒分析 (AI)</li>
+                                <li>匯出報表功能</li>
+                                <li>管理員後台</li>
+                                <li>切換到生產資料庫</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="card reveal" style="text-align: center; padding: 60px; background: var(--accent-medium); margin-top: 32px;">
+                        <h2 style="font-size: 72px; margin-bottom: 24px; color: var(--primary);">
+                            <span class="emoji">🚀</span>Bob AI 讓開發更快速、更專注、更有趣！
+                        </h2>
+                        <p style="font-size: 32px; color: var(--text);">Made with ❤️ by Bob AI Assistant</p>
+                    </div>
+                </div>
+                <div class="page-number">10</div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Navigation Controls -->
+    <div class="deck-controls">
+        <button id="prevBtn">← 上一頁</button>
+        <div class="slide-indicator">
+            <span id="currentSlide">1</span> / <span id="totalSlides">10</span>
+        </div>
+        <button id="nextBtn">下一頁 →</button>
+    </div>
+
+    <script>
+        /* ========================================
+           SLIDE PRESENTATION CONTROLLER
+           ======================================== */
+        class SlidePresentation {
+            constructor() {
+                this.slides = document.querySelectorAll('.slide');
+                this.currentSlide = 0;
+                this.stage = document.getElementById('deckStage');
+                this.totalSlides = this.slides.length;
+                
+                this.setupStageScale();
+                this.setupKeyboardNav();
+                this.setupTouchNav();
+                this.setupControls();
+                this.showSlide(0);
+                this.updateIndicator();
+            }
+
+            setupStageScale() {
+                const scale = () => {
+                    const factor = Math.min(
+                        window.innerWidth / 1920,
+                        window.innerHeight / 1080
+                    );
+                    const x = (window.innerWidth - 1920 * factor) / 2;
+                    const y = (window.innerHeight - 1080 * factor) / 2;
+                    this.stage.style.transform = `translate(${x}px, ${y}px) scale(${factor})`;
+                };
+                scale();
+                window.addEventListener('resize', scale);
+            }
+
+            setupKeyboardNav() {
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+                        e.preventDefault();
+                        this.nextSlide();
+                    } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+                        e.preventDefault();
+                        this.prevSlide();
+                    } else if (e.key === 'Home') {
+                        e.preventDefault();
+                        this.showSlide(0);
+                    } else if (e.key === 'End') {
+                        e.preventDefault();
+                        this.showSlide(this.totalSlides - 1);
+                    }
+                });
+            }
+
+            setupTouchNav() {
+                let touchStartX = 0;
+                let touchEndX = 0;
+
+                this.stage.addEventListener('touchstart', (e) => {
+                    touchStartX = e.changedTouches[0].screenX;
+                });
+
+                this.stage.addEventListener('touchend', (e) => {
+                    touchEndX = e.changedTouches[0].screenX;
+                    this.handleSwipe();
+                });
+
+                const handleSwipe = () => {
+                    if (touchEndX < touchStartX - 50) this.nextSlide();
+                    if (touchEndX > touchStartX + 50) this.prevSlide();
+                };
+                this.handleSwipe = handleSwipe;
+            }
+
+            setupControls() {
+                document.getElementById('prevBtn').addEventListener('click', () => this.prevSlide());
+                document.getElementById('nextBtn').addEventListener('click', () => this.nextSlide());
+            }
+
+            showSlide(index) {
+                this.currentSlide = Math.max(0, Math.min(index, this.totalSlides - 1));
+                this.slides.forEach((slide, i) => {
+                    slide.classList.toggle('active', i === this.currentSlide);
+                    slide.classList.toggle('visible', i === this.currentSlide);
+                });
+                this.updateIndicator();
+            }
+
+            nextSlide() {
+                if (this.currentSlide < this.totalSlides - 1) {
+                    this.showSlide(this.currentSlide + 1);
+                }
+            }
+
+            prevSlide() {
+                if (this.currentSlide > 0) {
+                    this.showSlide(this.currentSlide - 1);
+                }
+            }
+
+            updateIndicator() {
+                document.getElementById('currentSlide').textContent = this.currentSlide + 1;
+                document.getElementById('totalSlides').textContent = this.totalSlides;
+            }
+        }
+
+        // Initialize presentation
+        new SlidePresentation();
+    </script>
+</body>
+</html>
