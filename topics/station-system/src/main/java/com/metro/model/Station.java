@@ -1,7 +1,10 @@
 package com.metro.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 車站實體
@@ -27,6 +30,15 @@ public class Station {
     
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+    
+    /**
+     * 車站的所有回饋
+     * 使用一對多關係，一個車站可以有多個回饋
+     * @JsonIgnore 避免 JSON 序列化時的循環引用
+     */
+    @JsonIgnore
+    @OneToMany(mappedBy = "station", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Feedback> feedbacks = new ArrayList<>();
     
     @PrePersist
     protected void onCreate() {
@@ -82,6 +94,34 @@ public class Station {
     
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+    
+    public List<Feedback> getFeedbacks() {
+        return feedbacks;
+    }
+    
+    public void setFeedbacks(List<Feedback> feedbacks) {
+        this.feedbacks = feedbacks;
+    }
+    
+    /**
+     * 新增回饋到車站
+     *
+     * @param feedback 回饋物件
+     */
+    public void addFeedback(Feedback feedback) {
+        feedbacks.add(feedback);
+        feedback.setStation(this);
+    }
+    
+    /**
+     * 從車站移除回饋
+     *
+     * @param feedback 回饋物件
+     */
+    public void removeFeedback(Feedback feedback) {
+        feedbacks.remove(feedback);
+        feedback.setStation(null);
     }
     
     @Override
